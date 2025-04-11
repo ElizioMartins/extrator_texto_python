@@ -1,0 +1,1 @@
+# extrator_texto_python
