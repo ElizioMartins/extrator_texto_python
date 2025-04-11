@@ -1,0 +1,600 @@
+{
+  "name": "My workflow 5",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "5b182bc8-1101-414f-8413-aeb5f72be935",
+        "formTitle": "Atas",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "audio",
+              "fieldType": "file",
+              "multipleFiles": false
+            },
+            {
+              "fieldLabel": "ata",
+              "fieldType": "file",
+              "multipleFiles": false
+            },
+            {
+              "fieldLabel": "edital",
+              "fieldType": "file",
+              "multipleFiles": false
+            },
+            {
+              "fieldLabel": "template",
+              "fieldType": "file",
+              "multipleFiles": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        320
+      ],
+      "id": "21c8c5e2-063f-4ba6-8904-97bb544e0597",
+      "name": "Formulário",
+      "webhookId": "5b182bc8-1101-414f-8413-aeb5f72be935"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Utilize o campo {{ $json.ataTexto }} como modelo estrutural e de estilo para a redação de atas.\n\nA partir dessa estrutura, elabore uma nova ata com base nas seguintes informações:\n- Os dados da convocação da assembleia, disponíveis em {{ $json.editalTexto }};\n- E os relatos do que foi discutido durante a reunião, trabalhe com o máximo de informações, disponíveis em {{ $json.reuniaoTexto }}.\n\nA nova ata deve seguir o mesmo padrão de formalidade, organização e linguagem do modelo fornecido.\n\nA saída esperada é um texto com formatação markdown da ata gerada, redigido de forma completa e coerente.\n\nNome do condomínio: {{ $json.dadosCondominio.codominioNome }}\nCNPJ do condomínio: {{ $json.dadosCondominio.condominioCNPJ }}\nEndereço do condomínio: {{ $json.dadosCondominio.condominioEndereco }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        1900,
+        360
+      ],
+      "id": "0ba2217d-6010-4c27-b057-93f7802e76a9",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://b018-177-53-175-231.ngrok-free.app/extract-text/edital",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "edital"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        220,
+        -20
+      ],
+      "id": "235ba2dd-84a1-4a56-8c4c-c0641fdd6ab3",
+      "name": "Processar texto edital"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://b018-177-53-175-231.ngrok-free.app/extract-text/ata",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "ata"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        220,
+        -220
+      ],
+      "id": "c73504cd-bcf0-4741-b691-7bcecdc961a9",
+      "name": "Processar texto ata"
+    },
+    {
+      "parameters": {
+        "numberInputs": 4
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        1480,
+        300
+      ],
+      "id": "d32a0d89-8844-4680-87b1-a73a65a1156d",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "const allInputs = $input.all();\n\nreturn [\n  {\n    json: {\n      ataTexto: allInputs.find(i => i.json.ataTexto)?.json.ataTexto || '',\n      editalTexto: allInputs.find(i => i.json.editalTexto)?.json.editalTexto || '',\n      reuniaoTexto: allInputs.find(i => i.json.reuniaoTexto)?.json.reuniaoTexto || '',\n      dadosCondominio: allInputs.find(i => i.json.dadosCondominio)?.json.dadosCondominio || '',\n\n    }\n  }\n];\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1700,
+        360
+      ],
+      "id": "d602f5ba-6bed-46c1-95cf-1c2d8647b1b6",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "jsCode": "let raw = $input.first().json.ata;\n\n// Remove blocos com combinações típicas binárias como CJOJQJJaJ, ÁpJ, etc.\nlet textoLimpo = raw\n// Resultado limpo\nreturn {\n  json: {\n    ataTexto: textoLimpo\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        500,
+        -220
+      ],
+      "id": "df0e7761-2506-44cf-be04-4b0ae4b6fc5e",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "jsCode": "let raw = $input.first().json.edital;\n\n// Remove blocos com combinações típicas binárias como CJOJQJJaJ, ÁpJ, etc.\nlet textoLimpo = raw\n// Resultado limpo\nreturn {\n  json: {\n    editalTexto: textoLimpo\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        500,
+        -20
+      ],
+      "id": "932e1439-1f60-4021-b156-2afd413e318d",
+      "name": "Code2"
+    },
+    {
+      "parameters": {
+        "jsCode": "let raw = $input.first().json.audio;\n\n// Remove blocos com combinações típicas binárias como CJOJQJJaJ, ÁpJ, etc.\nlet textoLimpo = raw\n// Resultado limpo\nreturn {\n  json: {\n    reuniaoTexto: textoLimpo\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        760,
+        360
+      ],
+      "id": "dae2d607-6882-44e8-aa59-051f56c871e1",
+      "name": "Code3"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        1920,
+        600
+      ],
+      "id": "d7b1546b-c5cf-4dcc-9ab9-19aa08db0e84",
+      "name": "Groq Chat Model"
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "binaryPropertyName": "audio",
+        "destinationKey": "audio",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        480,
+        480
+      ],
+      "id": "fbc0c3ad-c81b-403a-b421-0f079c815655",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"dadosCondominio\": {\n    \"codominioNome\": \"California\",\n    \"condominioCNPJ\": \"99.999.999/9999-99\",\n    \"condominioEndereco\": \"Rua do lado direito, n 455, Jardim Rosa, Vitória\"\n  }\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        320,
+        880
+      ],
+      "id": "ba398164-ba8a-4fc3-afc9-07841b7aca55",
+      "name": "Dados condomínio"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        2540,
+        540
+      ],
+      "id": "32eb2a58-8bbe-4b69-9fbf-bff744d8e76e",
+      "name": "Groq Chat Model1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        2340,
+        220
+      ],
+      "id": "0338abcc-ab02-4e3c-8261-b9266817897b",
+      "name": "Groq Chat Model2"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=utilize dessa informação {{ $json.output }}, para fazer um resumo em tópicos.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        2380,
+        60
+      ],
+      "id": "b028a7d9-bf73-49a4-b545-a1898aa23ed8",
+      "name": "AI Agent Resumo"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=utilize dessa informação {{ $json.output }}, para realizar um plano de ação dos assuntos discutidos.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        2500,
+        360
+      ],
+      "id": "60395eb2-e2c0-4a55-9216-34cd65cb4192",
+      "name": "AI Agent Plano de Ação"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.audio.mimetype }}",
+                    "rightValue": "audio/ogg",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "a06e0e01-ad43-4f87-bb54-06314c9535d7"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "83753323-0917-46c0-a886-3693f58d6687",
+                    "leftValue": "={{ $json.audio.mimetype }}",
+                    "rightValue": "=audio/ogg",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEquals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        240,
+        320
+      ],
+      "id": "784944b1-ce95-45e0-bf88-e2f312d3d4c1",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        480,
+        180
+      ],
+      "id": "6308814d-f5c0-457e-b30c-8d9bd11ebedc",
+      "name": "OpenAI"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://b018-177-53-175-231.ngrok-free.app/merge-docx",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "output"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2240,
+        680
+      ],
+      "id": "c4ce5b7b-f66b-44d4-bf3e-b09bff05761a",
+      "name": "Merge-docx"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Formulário": {
+      "main": [
+        [
+          {
+            "node": "Processar texto edital",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Processar texto ata",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Dados condomínio",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "AI Agent Plano de Ação",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "AI Agent Resumo",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge-docx",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar texto edital": {
+      "main": [
+        [
+          {
+            "node": "Code2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar texto ata": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code2": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Code3": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Code3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dados condomínio": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent Plano de Ação",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent Resumo",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Code3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "9929fca0-e9a3-46cc-87ae-0f63760b2dcb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a4650cbe91392dda709aff6ac853021f6844720727d458db7d9d8ddbbc74d8e1"
+  },
+  "id": "7R9Y5hN1T80Siupm",
+  "tags": []
+}
