@@ -1,0 +1,6 @@
+# Diretórios de dependências e ambiente virtual
+__pycache__/
+*.pyc
+*.pyo
+venv/
+env/
