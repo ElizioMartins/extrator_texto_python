@@ -26,21 +26,23 @@ async def extract_text(tipo: str, file: UploadFile = File(...)):
 
     return {tipo: resultado}
 
-@app.post("/merge-docx/")
-async def merge_docx(text: str = Form(...)):
+@app.post("/merge-docx/{nome}")
+async def merge_docx(nome: str, text: str = Form(...)):
     """Carrega o modelo TemplateAta.docx, insere o texto e retorna o novo arquivo para download."""
     template_path = os.path.join("input_docs", "TemplateAta.docx")
-    output_path = os.path.join(OUTPUT_DIR, "documento_final.docx")
+    output_path = os.path.join(OUTPUT_DIR, nome +".docx")
 
     if not os.path.exists(template_path):
         return {"error": "Arquivo TemplateAta.docx não encontrado na pasta input_docs."}
 
     try:
         merge_text_with_docx(template_path, text, output_path)
-        return FileResponse(output_path, filename="documento_final.docx", media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+        return FileResponse(output_path, filename= nome +".docx", media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
 
     except Exception as e:
         return {"error": str(e)}
+    
+    
 
 # POCO nesse modelo o aruivo é enviado via POST e o texto é enviado via Form
 # @app.post("/merge-docx/")

@@ -1,0 +1,715 @@
+{
+  "name": "Gerador de Ata modelo 2.0",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "5b182bc8-1101-414f-8413-aeb5f72be935",
+        "formTitle": "Atas",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "audio",
+              "fieldType": "file",
+              "multipleFiles": false
+            },
+            {
+              "fieldLabel": "ata",
+              "fieldType": "file",
+              "multipleFiles": false
+            },
+            {
+              "fieldLabel": "edital",
+              "fieldType": "file",
+              "multipleFiles": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2,
+      "position": [
+        -680,
+        -180
+      ],
+      "id": "2700e7a1-77ce-4bf3-b9c1-960b0e41e470",
+      "name": "Formulário",
+      "webhookId": "5b182bc8-1101-414f-8413-aeb5f72be935"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://16a5-177-53-175-231.ngrok-free.app/extract-text/edital",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "edital"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        -380,
+        -260
+      ],
+      "id": "5ae992b9-b26e-4d74-aa20-ff6191f677a2",
+      "name": "Processar texto edital"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://16a5-177-53-175-231.ngrok-free.app/extract-text/ata",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "ata"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        -380,
+        -480
+      ],
+      "id": "b8cc3228-20e8-4592-ba6f-b3553e5c42d5",
+      "name": "Processar texto ata"
+    },
+    {
+      "parameters": {
+        "numberInputs": 4
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        960,
+        -200
+      ],
+      "id": "6d79533a-6659-4130-8f7b-977229792fdb",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "const allInputs = $input.all();\n\nreturn [\n  {\n    json: {\n      ataTexto: allInputs.find(i => i.json.ataTexto)?.json.ataTexto || '',\n      editalTexto: allInputs.find(i => i.json.editalTexto)?.json.editalTexto || '',\n      reuniaoTexto: allInputs.find(i => i.json.reuniaoTexto)?.json.reuniaoTexto || '',\n      dadosCondominio: allInputs.find(i => i.json.dadosCondominio)?.json.dadosCondominio || '',\n\n    }\n  }\n];\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1180,
+        -140
+      ],
+      "id": "6a9575fd-1660-45b7-b345-278f36c22adc",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "jsCode": "let raw = $input.first().json.ata;\n\n// Remove blocos com combinações típicas binárias como CJOJQJJaJ, ÁpJ, etc.\nlet textoLimpo = raw\n// Resultado limpo\nreturn {\n  json: {\n    ataTexto: textoLimpo\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -140,
+        -480
+      ],
+      "id": "b2bbf8df-0a2e-4137-93a8-e478f82269f0",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "jsCode": "let raw = $input.first().json.edital;\n\n// Remove blocos com combinações típicas binárias como CJOJQJJaJ, ÁpJ, etc.\nlet textoLimpo = raw\n// Resultado limpo\nreturn {\n  json: {\n    editalTexto: textoLimpo\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -140,
+        -280
+      ],
+      "id": "a4e3d465-6904-45c8-8fe0-3c82e44e03cb",
+      "name": "Code2"
+    },
+    {
+      "parameters": {
+        "jsCode": "let raw = $input.first().json.audio;\n\n// Remove blocos com combinações típicas binárias como CJOJQJJaJ, ÁpJ, etc.\nlet textoLimpo = raw\n// Resultado limpo\nreturn {\n  json: {\n    reuniaoTexto: textoLimpo\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        200,
+        40
+      ],
+      "id": "ab74fb2a-d024-4436-95b1-243e34244d93",
+      "name": "Code3"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        1380,
+        40
+      ],
+      "id": "1e82089c-ad3f-4a06-903b-984af47cbd94",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "GlWKX8ytGjSD55z3",
+          "name": "Groq account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "binaryPropertyName": "audio",
+        "destinationKey": "audio",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        40
+      ],
+      "id": "66975c4d-09e4-4f41-acf3-a0c278d7ad3a",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"dadosCondominio\": {\n    \"codominioNome\": \"California\",\n    \"condominioCNPJ\": \"99.999.999/9999-99\",\n    \"condominioEndereco\": \"Rua do lado direito, n 455, Jardim Rosa, Vitória\"\n  }\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -200,
+        380
+      ],
+      "id": "63b910f5-6434-414f-828e-e5d7f3806c03",
+      "name": "Dados condomínio"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        2020,
+        40
+      ],
+      "id": "1057daed-8e7c-41e0-a583-8c536bf93f60",
+      "name": "Groq Chat Model1",
+      "credentials": {
+        "groqApi": {
+          "id": "GlWKX8ytGjSD55z3",
+          "name": "Groq account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        1820,
+        -280
+      ],
+      "id": "0e50208c-b05d-4e37-bcc1-13710a106b34",
+      "name": "Groq Chat Model2",
+      "credentials": {
+        "groqApi": {
+          "id": "GlWKX8ytGjSD55z3",
+          "name": "Groq account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Gere um resumo em tópicos da ata da assembléia em tópicos, usando {{ $json.output }}.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        1860,
+        -440
+      ],
+      "id": "7a0b2d0f-00ab-4aff-a002-d58ef80cbaeb",
+      "name": "AI Agent Resumo"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Gere plano de ações a partir do que foi escrito na ata da assembléia usando {{ $json.output }}.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        1980,
+        -140
+      ],
+      "id": "4a259a79-32ed-459c-958f-35594cdfd5f7",
+      "name": "AI Agent Plano de Ação"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.audio.mimetype }}",
+                    "rightValue": "audio",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "a06e0e01-ad43-4f87-bb54-06314c9535d7"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "83753323-0917-46c0-a886-3693f58d6687",
+                    "leftValue": "={{ $json.audio.mimetype }}",
+                    "rightValue": "=audio",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notContains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -380,
+        -60
+      ],
+      "id": "eddb2507-84c7-4b28-aabe-3bbdce3edbda",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -40,
+        -160
+      ],
+      "id": "15f9bc25-201e-457b-8560-113736d6a1d6",
+      "name": "OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "kMCBREazz1Nx2zzm",
+          "name": "OpenAi Otimize"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "let raw = $input.first().json.audio;\n\n// Remove blocos com combinações típicas binárias como CJOJQJJaJ, ÁpJ, etc.\nlet textoLimpo = raw\n// Resultado limpo\nreturn {\n  json: {\n    reuniaoTexto: textoLimpo\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        -160
+      ],
+      "id": "11e49ae4-46f7-412d-babe-87d93b5af0bc",
+      "name": "Code4"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Utilize o campo {{ $json.ataTexto }} como modelo estrutural e de estilo para a redação de atas.\n\nA partir dessa estrutura, elabore uma nova ata com base nas seguintes informações:\n- Os dados da convocação da assembleia, disponíveis em {{ $json.editalTexto }};\n- E os relatos do que foi discutido durante a reunião, trabalhe com o máximo de informações que estão em {{ $json.reuniaoTexto }}.\n\nA nova ata deve seguir o mesmo padrão de formalidade, organização e linguagem do modelo fornecido.\n\nA saída esperada é um texto com formatação markdown da ata gerada, redigido de forma completa e coerente.\n\nNome do condomínio: {{ $json.dadosCondominio.codominioNome }}\nCNPJ do condomínio: {{ $json.dadosCondominio.condominioCNPJ }}\nEndereço do condomínio: {{ $json.dadosCondominio.condominioEndereco }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        1380,
+        -140
+      ],
+      "id": "a0318c0b-8a19-43d7-ac1d-706e9a0e952e",
+      "name": "AI Agent Gerar Ata"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://16a5-177-53-175-231.ngrok-free.app/merge-docx/resumo",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{ $json.output }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2260,
+        -380
+      ],
+      "id": "93b01661-ea3b-4269-ac2d-cc3803439829",
+      "name": "HTTP Resumo Ata"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://16a5-177-53-175-231.ngrok-free.app/merge-docx/plano-acao",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{ $json.output }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2300,
+        180
+      ],
+      "id": "e9981241-8727-4f52-b845-900500f9299e",
+      "name": "HTTP Plano Ação Ata"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://16a5-177-53-175-231.ngrok-free.app/merge-docx/ata-final",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{ $json.output }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1780,
+        220
+      ],
+      "id": "f0ac2812-060f-414e-acad-7c0707b4ce6e",
+      "name": "HTTP Ata Reunião"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Formulário": {
+      "main": [
+        [
+          {
+            "node": "Processar texto edital",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Processar texto ata",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Dados condomínio",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar texto edital": {
+      "main": [
+        [
+          {
+            "node": "Code2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar texto ata": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code2": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Code3": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "AI Agent Gerar Ata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent Gerar Ata",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Code3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dados condomínio": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent Plano de Ação",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent Resumo",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent Resumo": {
+      "main": [
+        [
+          {
+            "node": "HTTP Resumo Ata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent Plano de Ação": {
+      "main": [
+        [
+          {
+            "node": "HTTP Plano Ação Ata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Code4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code4": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "AI Agent Gerar Ata": {
+      "main": [
+        [
+          {
+            "node": "AI Agent Plano de Ação",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "AI Agent Resumo",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Ata Reunião",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "7c48d1f7-5eaf-47e3-a7fb-2ff3990bdd11",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a4650cbe91392dda709aff6ac853021f6844720727d458db7d9d8ddbbc74d8e1"
+  },
+  "id": "cD8Tju8ze8kTZ5hX",
+  "tags": []
+}
